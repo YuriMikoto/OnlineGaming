@@ -26,7 +26,7 @@ public:
 	void setupUDP(int port);
 	void setupUDP(int port, char * ip);
 	virtual int sendData(char* ip, int port, char* message);
-	int receiveData(char* message);
+	int receiveData(char* ip, int port, char* message);
 	void initialise();
 	void closeSocket();
 	void cleanup();

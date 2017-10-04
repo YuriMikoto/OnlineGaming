@@ -33,11 +33,13 @@ void Net::setupUDP(int port, char * ip)
 
 		//create UDP socket and bind to my_addr
 		sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (sockfd == INVALID_SOCKET)
+		if (sockfd == INVALID_SOCKET) {
 			//Log::writeToLog("Call to socket() failed");
+		}
 
-		if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof my_addr) == SOCKET_ERROR)
+		if (bind(sockfd, (struct sockaddr *)&my_addr, sizeof my_addr) == SOCKET_ERROR) {
 			//Log::writeToLog("Call to bind() failed");
+		}
 
 		//clear out the socket sets
 		FD_ZERO(&master);    // clear the master and temp sets
@@ -64,8 +66,15 @@ void Net::setupUDP(int port, char * ip)
 returns number of bytes received
 -1 means an error occured.
 */
-int Net::receiveData(char* message)
+int Net::receiveData(char* srcIP, int port, char* message)
 {
+	int srcPort = port;
+
+	their_addr.sin_family = AF_INET;
+	their_addr.sin_port = htons(srcPort);
+	their_addr.sin_addr.s_addr = inet_addr(srcIP);
+	memset(their_addr.sin_zero, '\0', 8);
+
 	int bytes_received = 0;
 
 	read_fds = master; // copy master list
