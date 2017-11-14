@@ -1,0 +1,4 @@
+﻿  main.cpp
+c:\users\gameuser\documents\projects (og)\onlinegaming\netlab2\netlab2\main.cpp(92): warning C4018: '<': signed/unsigned mismatch
+  NetLab2.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\NetLab2\Debug\NetLab2.exe
+  NetLab2.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\NetLab2\Debug\NetLab2.pdb (Partial PDB)
