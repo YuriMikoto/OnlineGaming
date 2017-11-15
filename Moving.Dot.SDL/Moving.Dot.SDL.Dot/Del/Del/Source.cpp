@@ -83,7 +83,7 @@ public:
 	//Takes key presses and adjusts the dot's velocity
 	void handleEvent(SDL_Event& e);
 
-	void handleCollision(Dot other);
+	bool handleCollision(Dot other);
 
 	//Moves the dot
 	void move();
@@ -93,6 +93,8 @@ public:
 
 	int getX();
 	int getY();
+
+	void setPosition(int x, int y);
 
 private:
 	//The X and Y offsets of the dot
@@ -318,7 +320,7 @@ void Dot::handleEvent(SDL_Event& e)
 	}
 }
 
-void Dot::handleCollision(Dot other)
+bool Dot::handleCollision(Dot other)
 {
 	//Use the distance formula to calculate the distance between the two circles.
 	int distance = sqrt(((other.getX() - mPosX) * (other.getX() - mPosX)) + ((other.getY() - mPosY) * (other.getY() - mPosY)));
@@ -326,7 +328,9 @@ void Dot::handleCollision(Dot other)
 	if (distance <= DOT_WIDTH)
 	{//If they're close enough, respond. Otherwise, do nothing.
 		std::cout << "COLLIDING ";
+		return true;
 	}
+	return false;
 }
 
 void Dot::move()
@@ -371,6 +375,12 @@ int Dot::getY()
 	return mPosY;
 }
 
+void Dot::setPosition(int x, int y)
+{
+	mPosX = x;
+	mPosY = y;
+}
+
 bool init()
 {
 	//Initialization flag
@@ -384,6 +394,7 @@ bool init()
 	}
 	else
 	{
+		SDLNet_Init();
 		//Set texture filtering to linear
 		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
 		{
@@ -487,22 +498,35 @@ int main(int argc, char* args[])
 		}
 		else
 		{	
-			IPaddress* ip;
+			IPaddress ip;
 			TCPsocket sock;
 			Uint16 port;
 			char buffer[BUFFER_SIZE];
 			int received = 0;
 
-			int clientCount = 0;
+			int playerID;
 
 			//Main loop flag
 			bool quit = false;
 
-			//////////////////////////////////////////////////
-			ip = new IPaddress();
-			//ip->host = 149.153.106.167;
-			ip->host = 149153106167; //???
-			sock = SDLNet_TCP_Open(ip);
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//// Note to self: Set this project up as client. See C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\Moving.Dot.SDL\Moving.Dot.SDL.Dot\Del\S E R V E R\Del for server.
+			/// Objective 1-1: COMPLETE
+			///   Get this client to receive the message the server sends out the moment a connection is formed. This gives us the player ID.
+			///   - This is used to determine which dot to control. Change "playerID" to this value. 
+			/// Objective 2-1: COMPLETE
+			///   Every time this player dot moves, send a message to the server stating that this dot has moved, which will send this information to the other client.
+			/// Objective 2-2: --
+			///   Every update, check for a message that states the other player has moved. On receipt, change that dot's position on this client's side.
+			/// Objective 3-1: --
+			///   Every move, check to see if the two players have collided. If so, P1 wins. If not, increment a timer; once timer's value reaches a preset max, P2 wins.
+			///   - The collision check is already complete, all that's needed now is to correct the response using data sending to let the other player know. 
+			// TEST: Run server indicated before, then CTRL+F5 this solution, once for each player.
+			
+			int please = SDLNet_ResolveHost(&ip, "149.153.106.167", 1234);
+			sock = SDLNet_TCP_Open(&ip); 
+			SDLNet_TCP_Recv(sock, buffer, BUFFER_SIZE); //If you get an access violation error here, set up the server first.
+			sscanf_s(buffer, "0 %d", &playerID);
 
 			//Event handler
 			SDL_Event e;
@@ -515,7 +539,32 @@ int main(int argc, char* args[])
 			while (!quit)
 			{
 				//Receive and interpret messages; move the other player's dot according to this.
-				//recv();
+				//Application freezes indefinitely while it waits for a response. Not sure how to get around that. Closing the server interrupts this freeze.
+				/*memset(buffer, 0, sizeof(buffer));
+				SDLNet_TCP_Recv(sock, buffer, BUFFER_SIZE);
+				int num = buffer[0] - '0';
+
+				if (num == 1)
+				{
+					int newX;
+					int newY;
+					sscanf_s(buffer, "0 %d %d", &newX, &newY);
+					if (playerID == 1)
+					{
+						player2.setPosition(newX, newY);
+					}
+					else if (playerID == 2)
+					{
+						player1.setPosition(newX, newY);
+					}
+				}
+
+				if (num == 3)
+				{
+					std::cout << "Opponent detected collision." << std::endl;
+				}*/
+
+				//std::cout << buffer << std::endl;
 
 				//Handle events on queue
 				while (SDL_PollEvent(&e) != 0)
@@ -527,17 +576,40 @@ int main(int argc, char* args[])
 					}
 
 					//Handle input for the dot
-					player1.handleEvent(e);
+					if (playerID == 1)
+					{
+						player1.handleEvent(e);
+					}
+					else if (playerID == 2)
+					{
+						player2.handleEvent(e);
+					}
 				}
 
 				//Move the dot and send its new location to the other player.
 				player1.move();
-				std::string msg = "" + std::to_string(player1.getX()) + ", " + std::to_string(player1.getY());
+				player2.move();
+				if (playerID == 1)
+				{
+					std::string msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY());
+				}
+				else if (playerID == 2)
+				{
+					std::string msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY());
+				}
 				//buffer = msg.c_str();
 				memcpy(buffer, msg.c_str(), msg.size());
-				//SDLNet_TCP_Send(sock, buffer, strlen(buffer)); //Currently causes an error. Unfortunately, I have no idea what I'm doing.
+				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1); 
+				
+				//std::cout << buffer << std::endl;
 
-				player1.handleCollision(player2);
+				if (player1.handleCollision(player2))
+				{
+					std::string msg = "3";
+					//buffer = msg.c_str();
+					memcpy(buffer, msg.c_str(), msg.size());
+					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
+				}
 
 				//Clear screen
 				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -554,6 +626,7 @@ int main(int argc, char* args[])
 	}
 
 	//Free resources and close SDL
+	SDLNet_Quit();
 	close();
 
 	return 0;
