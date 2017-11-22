@@ -500,6 +500,7 @@ int main(int argc, char* args[])
 		{	
 			IPaddress ip;
 			TCPsocket sock;
+			SDLNet_SocketSet socks = SDLNet_AllocSocketSet(MAX_SOCKETS);
 			Uint16 port;
 			char buffer[BUFFER_SIZE];
 			int received = 0;
@@ -525,6 +526,7 @@ int main(int argc, char* args[])
 			
 			int please = SDLNet_ResolveHost(&ip, "149.153.106.167", 1234);
 			sock = SDLNet_TCP_Open(&ip); 
+			SDLNet_TCP_AddSocket(socks, sock);
 			SDLNet_TCP_Recv(sock, buffer, BUFFER_SIZE); //If you get an access violation error here, set up the server first.
 			sscanf_s(buffer, "0 %d", &playerID);
 
@@ -539,30 +541,42 @@ int main(int argc, char* args[])
 			while (!quit)
 			{
 				//Receive and interpret messages; move the other player's dot according to this.
-				//Application freezes indefinitely while it waits for a response. Not sure how to get around that. Closing the server interrupts this freeze.
-				/*memset(buffer, 0, sizeof(buffer));
-				SDLNet_TCP_Recv(sock, buffer, BUFFER_SIZE);
-				int num = buffer[0] - '0';
-
-				if (num == 1)
+				while (SDLNet_CheckSockets(socks, 0) > 0)
 				{
-					int newX;
-					int newY;
-					sscanf_s(buffer, "0 %d %d", &newX, &newY);
-					if (playerID == 1)
-					{
-						player2.setPosition(newX, newY);
-					}
-					else if (playerID == 2)
-					{
-						player1.setPosition(newX, newY);
+					if (SDLNet_SocketReady(sock)) {
+						memset(buffer, 0, sizeof(buffer)); //Clear the buffer first before receiving.
+						SDLNet_TCP_Recv(sock, buffer, BUFFER_SIZE); 
+						int num = buffer[0] - '0';
+
+						if (num == 1)
+						{
+
+							std::cout << buffer << std::endl;
+
+							int newX;
+							int newY;
+							sscanf_s(buffer, "%*d %d %d", &newX, &newY);
+							std::cout << "(" << newX << ", " << newY << ")" << std::endl;
+							if (playerID == 1)
+							{
+								player2.setPosition(newX, newY);
+							}
+							else if (playerID == 2)
+							{
+								player1.setPosition(newX, newY);
+							}
+
+							std::cout << "P1: (" << player1.getX() << ", " << player1.getY() << ")" << std::endl << "P2: (" << player2.getX() << ", " << player2.getY() << ")" << std::endl;
+
+						}
+
+						if (num == 3)
+						{
+							std::cout << "Opponent detected collision." << std::endl;
+						}
 					}
 				}
-
-				if (num == 3)
-				{
-					std::cout << "Opponent detected collision." << std::endl;
-				}*/
+				
 
 				//std::cout << buffer << std::endl;
 
@@ -589,16 +603,20 @@ int main(int argc, char* args[])
 				//Move the dot and send its new location to the other player.
 				player1.move();
 				player2.move();
+
+				std::string msg;
+
 				if (playerID == 1)
 				{
-					std::string msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY());
+					msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY());
 				}
 				else if (playerID == 2)
 				{
-					std::string msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY());
+					msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY());
 				}
 				//buffer = msg.c_str();
 				memcpy(buffer, msg.c_str(), msg.size());
+				buffer[msg.size() + 1] = '\0';
 				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1); 
 				
 				//std::cout << buffer << std::endl;
