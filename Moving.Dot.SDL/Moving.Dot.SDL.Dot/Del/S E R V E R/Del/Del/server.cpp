@@ -108,14 +108,20 @@ int main (int argc, char ** argv)
 						//One player has detected that a collision has occurred.
 						int tmpvar;
 						sscanf(tmp, "3 %d", &tmpvar);
-						for(int k = 0; k < socketvector.size(); k++)
-						{
-							if (socketvector[k].id == tmpvar) 
-							{
-								SDLNet_TCP_Send(socketvector[k].socket, tmp, strlen(tmp)+1);
-								break;
-							}
+						if (tmpvar == 1)
+						{//Player 1 wins; send to Player 2.
+							SDLNet_TCP_Send(socketvector[1].socket, tmp, strlen(tmp) + 1);
 						}
+						else if (tmpvar == 2)
+						{//Player 2 wins; send to Player 1.
+							SDLNet_TCP_Send(socketvector[0].socket, tmp, strlen(tmp) + 1);
+						}
+
+						SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
+						SDLNet_TCP_Close(socketvector[i].socket);
+						socketvector.erase(socketvector.begin() + i);
+						playernum = 0;
+						curid = 1;
 					}
 				}
 			}

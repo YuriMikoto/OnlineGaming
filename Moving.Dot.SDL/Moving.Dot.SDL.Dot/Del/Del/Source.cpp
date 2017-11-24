@@ -456,15 +456,6 @@ bool loadMedia()
 	return success;
 }
 
-bool setupP2P()
-{
-	bool success = true;
-
-
-
-	return success;
-}
-
 void close()
 {
 	//Free loaded images
@@ -517,12 +508,12 @@ int main(int argc, char* args[])
 			///   - This is used to determine which dot to control. Change "playerID" to this value. 
 			/// Objective 2-1: COMPLETE
 			///   Every time this player dot moves, send a message to the server stating that this dot has moved, which will send this information to the other client.
-			/// Objective 2-2: --
+			/// Objective 2-2: COMPLETE
 			///   Every update, check for a message that states the other player has moved. On receipt, change that dot's position on this client's side.
 			/// Objective 3-1: --
 			///   Every move, check to see if the two players have collided. If so, P1 wins. If not, increment a timer; once timer's value reaches a preset max, P2 wins.
 			///   - The collision check is already complete, all that's needed now is to correct the response using data sending to let the other player know. 
-			// TEST: Run server indicated before, then CTRL+F5 this solution, once for each player.
+			// TEST: Run server indicated before, then CTRL+F5 this solution, once for each player. One client may automatically close; if this happens, close everything and start over.
 			
 			int please = SDLNet_ResolveHost(&ip, "149.153.106.167", 1234);
 			sock = SDLNet_TCP_Open(&ip); 
@@ -536,6 +527,10 @@ int main(int argc, char* args[])
 			//The dots that will be moving around on the screen
 			Dot player1(true);
 			Dot player2(false);
+
+			//If Player 2 survives for a full minute, they win.
+			int timer = 0;
+			const int ENDGAME_TIME = 6000;
 
 			//While application is running
 			while (!quit)
@@ -572,13 +567,12 @@ int main(int argc, char* args[])
 
 						if (num == 3)
 						{
-							std::cout << "Opponent detected collision." << std::endl;
+							std::cout << buffer << std::endl;
+
+							std::cout << "YOU LOSE" << std::endl;
 						}
 					}
 				}
-				
-
-				//std::cout << buffer << std::endl;
 
 				//Handle events on queue
 				while (SDL_PollEvent(&e) != 0)
@@ -608,23 +602,28 @@ int main(int argc, char* args[])
 
 				if (playerID == 1)
 				{
-					msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY());
+					msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY()) + '\0';
 				}
 				else if (playerID == 2)
 				{
-					msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY());
+					msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY()) + '\0';
 				}
-				//buffer = msg.c_str();
 				memcpy(buffer, msg.c_str(), msg.size());
-				buffer[msg.size() + 1] = '\0';
-				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1); 
-				
-				//std::cout << buffer << std::endl;
+				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1);
 
 				if (player1.handleCollision(player2))
 				{
-					std::string msg = "3";
-					//buffer = msg.c_str();
+					msg = "3 1" + '\0';
+					memcpy(buffer, msg.c_str(), msg.size());
+					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
+				}
+
+				//Increment game timer and check for game end.
+				timer++;
+
+				if (timer >= ENDGAME_TIME)
+				{
+					msg = "3 2" + '\0';
 					memcpy(buffer, msg.c_str(), msg.size());
 					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
 				}
