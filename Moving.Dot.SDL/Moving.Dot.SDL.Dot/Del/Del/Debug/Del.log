@@ -1,5 +1,5 @@
 ﻿  Source.cpp
 c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\del\source.cpp(332): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\del\source.cpp(509): warning C4101: 'port': unreferenced local variable
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\del\source.cpp(521): warning C4101: 'port': unreferenced local variable
   Del.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\Moving.Dot.SDL\Moving.Dot.SDL.Dot\Del\Debug\Del.exe
   Del.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\Moving.Dot.SDL\Moving.Dot.SDL.Dot\Del\Debug\Del.pdb (Partial PDB)

@@ -344,21 +344,33 @@ void Dot::move()
 	//Move the dot left or right
 	mPosX += mVelX;
 
-	//If the dot went too far to the left or right
-	if ((mPosX < 0) || (mPosX + DOT_WIDTH > SCREEN_WIDTH))
+	//If the dot moved off the left side.
+	if ((mPosX < -DOT_WIDTH))
 	{
-		//Move back
-		mPosX -= mVelX;
+		//Wrap to right.
+		mPosX = SCREEN_WIDTH;
+	}
+	//If the dot moved off the right side.
+	else if (mPosX > SCREEN_WIDTH)
+	{
+		//Wrap to left.
+		mPosX = -DOT_WIDTH;
 	}
 
 	//Move the dot up or down
 	mPosY += mVelY;
 
-	//If the dot went too far up or down
-	if ((mPosY < 0) || (mPosY + DOT_HEIGHT > SCREEN_HEIGHT))
+	//If the dot moved off the left side.
+	if (mPosY < -DOT_HEIGHT)
 	{
-		//Move back
-		mPosY -= mVelY;
+		//Wrap to right.
+		mPosY = SCREEN_HEIGHT;
+	}
+	//If the dot moved off the right side.
+	else if (mPosY > SCREEN_HEIGHT)
+	{
+		//Wrap to left.
+		mPosY = -DOT_HEIGHT;
 	}
 }
 
