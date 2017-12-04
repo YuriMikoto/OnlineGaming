@@ -15,7 +15,7 @@ const int SCREEN_HEIGHT = 480;
 
 const unsigned short PORT = 1234;
 const unsigned short BUFFER_SIZE = 512;
-const unsigned short MAX_SOCKETS = 2;
+const unsigned short MAX_SOCKETS = 3;
 const unsigned short MAX_CLIENTS = MAX_SOCKETS - 1;
 
 //Texture wrapper class
@@ -75,10 +75,10 @@ public:
 	static const int DOT_VEL = 2;
 
 	//Used to determine which player this dot is. Player 1 (host) is drawn in red; Player 2 (guest) is drawn in blue.
-	bool m_p1; 
+	int m_playerNum; 
 
 	//Initializes the variables
-	Dot(bool is_p1);
+	Dot(int playerNum);
 
 	//Takes key presses and adjusts the dot's velocity
 	void handleEvent(SDL_Event& e);
@@ -122,6 +122,7 @@ SDL_Renderer* gRenderer = NULL;
 //Scene textures
 LTexture redDotTexture;
 LTexture blueDotTexture;
+LTexture greenDotTexture;
 
 LTexture::LTexture()
 {
@@ -272,19 +273,24 @@ int LTexture::getHeight()
 }
 
 
-Dot::Dot(bool is_p1)
+Dot::Dot(int playerNum)
 {
-	m_p1 = is_p1;
+	m_playerNum = playerNum;
 
-	if (m_p1) 
+	if (m_playerNum == 1) 
 	{//Initialize starting positions.
 		mPosX = 0;
 		mPosY = 0;
 	}
-	else 
+	else if (m_playerNum == 2)
 	{//Each player starts in a different position.
-		mPosX = SCREEN_WIDTH / 2 - DOT_WIDTH;
-		mPosY = SCREEN_HEIGHT / 2 - DOT_HEIGHT;
+		mPosX = (SCREEN_WIDTH / 3) - DOT_WIDTH;
+		mPosY = (SCREEN_HEIGHT / 3) - DOT_HEIGHT;
+	}
+	else if (m_playerNum == 3)
+	{
+		mPosX = (SCREEN_WIDTH * 2 / 3) - DOT_WIDTH;
+		mPosY = (SCREEN_HEIGHT * 2 / 3) - DOT_HEIGHT;
 	}
 
 	//Initialize the velocity
@@ -358,11 +364,13 @@ void Dot::move()
 
 void Dot::render()
 {
-	//Show the dot. Player 1's is red, 2's is blue. Determine which is which, then draw.
-	if (m_p1)
+	//Show the dot. Player 1's is red, 2's is blue, 3's is green. Determine which is which, then draw.
+	if (m_playerNum == 1)
 		redDotTexture.render(mPosX, mPosY);
-	else
+	else if (m_playerNum == 2)
 		blueDotTexture.render(mPosX, mPosY);
+	else if (m_playerNum == 3)
+		greenDotTexture.render(mPosX, mPosY);
 }
 
 int Dot::getX()
@@ -452,6 +460,11 @@ bool loadMedia()
 		printf("Failed to load dot texture!\n");
 		success = false;
 	}
+	if (!greenDotTexture.loadFromFile("greendot.bmp"))
+	{
+		printf("Failed to load dot texture!\n");
+		success = false;
+	}
 
 	return success;
 }
@@ -461,6 +474,7 @@ void close()
 	//Free loaded images
 	redDotTexture.free();
 	blueDotTexture.free();
+	greenDotTexture.free();
 
 	//Destroy window	
 	SDL_DestroyRenderer(gRenderer);
@@ -513,6 +527,10 @@ int main(int argc, char* args[])
 			/// Objective 3-1: --
 			///   Every move, check to see if the two players have collided. If so, P1 wins. If not, increment a timer; once timer's value reaches a preset max, P2 wins.
 			///   - The collision check is already complete, all that's needed now is to correct the response using data sending to let the other player know. 
+			/// 
+			/// NEXT STEP: Project Version
+			/// Objective 4-1: 
+			///	  Add a third player. Make this one green.
 			// TEST: Run server indicated before, then CTRL+F5 this solution, once for each player. One client may automatically close; if this happens, close everything and start over.
 			
 			int please = SDLNet_ResolveHost(&ip, "149.153.106.167", 1234);
@@ -525,8 +543,9 @@ int main(int argc, char* args[])
 			SDL_Event e;
 
 			//The dots that will be moving around on the screen
-			Dot player1(true);
-			Dot player2(false);
+			Dot player1(1);
+			Dot player2(2);
+			Dot player3(3);
 
 			//If Player 2 survives for a full minute, they win.
 			int timer = 0;
@@ -548,20 +567,27 @@ int main(int argc, char* args[])
 
 							std::cout << buffer << std::endl;
 
+							int otherID;
 							int newX;
 							int newY;
-							sscanf_s(buffer, "%*d %d %d", &newX, &newY);
+							sscanf_s(buffer, "%*d %d %d %d", &otherID, &newX, &newY);
 							std::cout << "(" << newX << ", " << newY << ")" << std::endl;
-							if (playerID == 1)
-							{
-								player2.setPosition(newX, newY);
-							}
-							else if (playerID == 2)
+							if (otherID == 1)
 							{
 								player1.setPosition(newX, newY);
 							}
+							else if (otherID == 2)
+							{
+								player2.setPosition(newX, newY);
+							}
+							else if (otherID == 3)
+							{
+								player3.setPosition(newX, newY);
+							}
 
-							std::cout << "P1: (" << player1.getX() << ", " << player1.getY() << ")" << std::endl << "P2: (" << player2.getX() << ", " << player2.getY() << ")" << std::endl;
+							std::cout << "P1: (" << player1.getX() << ", " << player1.getY() << ")" << std::endl << 
+										 "P2: (" << player2.getX() << ", " << player2.getY() << ")" << std::endl <<
+										 "P3: (" << player3.getX() << ", " << player3.getY() << ")" << std::endl;
 
 						}
 
@@ -592,31 +618,40 @@ int main(int argc, char* args[])
 					{
 						player2.handleEvent(e);
 					}
+					else if (playerID == 3)
+					{
+						player3.handleEvent(e);
+					}
 				}
 
 				//Move the dot and send its new location to the other player.
 				player1.move();
 				player2.move();
+				player3.move();
 
 				std::string msg;
 
 				if (playerID == 1)
 				{
-					msg = "1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY()) + '\0';
+					msg = "1 1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY()) + '\0';
 				}
 				else if (playerID == 2)
 				{
-					msg = "1 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY()) + '\0';
+					msg = "1 2 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY()) + '\0';
+				}
+				else if (playerID == 3)
+				{
+					msg = "1 3 " + std::to_string(player3.getX()) + " " + std::to_string(player3.getY()) + '\0';
 				}
 				memcpy(buffer, msg.c_str(), msg.size());
 				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1);
 
-				if (player1.handleCollision(player2))
+				/*if (player1.handleCollision(player2) || player1.handleCollision(player3) || player2.handleCollision(player3))
 				{
 					msg = "3 1" + '\0';
 					memcpy(buffer, msg.c_str(), msg.size());
 					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
-				}
+				}*/
 
 				//Increment game timer and check for game end.
 				timer++;
@@ -635,6 +670,7 @@ int main(int argc, char* args[])
 				//Render objects
 				player1.render();
 				player2.render();
+				player3.render();
 
 				//Update screen
 				SDL_RenderPresent(gRenderer);
