@@ -1,4 +1,9 @@
-﻿  Skipping... (no relevant changes detected)
-  server.cpp
+﻿  server.cpp
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(78): warning C4018: '<': signed/unsigned mismatch
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(99): warning C4018: '<': signed/unsigned mismatch
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(108): warning C4018: '<': signed/unsigned mismatch
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(138): warning C4018: '<': signed/unsigned mismatch
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(142): warning C4018: '<': signed/unsigned mismatch
+c:\users\gameuser\documents\projects (og)\onlinegaming\moving.dot.sdl\moving.dot.sdl.dot\del\s e r v e r\del\del\server.cpp(153): warning C4018: '<': signed/unsigned mismatch
   Del.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\Moving.Dot.SDL\Moving.Dot.SDL.Dot\Del\S E R V E R\Del\Debug\Del.exe
   Del.vcxproj -> C:\Users\gameuser\Documents\Projects (OG)\OnlineGaming\Moving.Dot.SDL\Moving.Dot.SDL.Dot\Del\S E R V E R\Del\Debug\Del.pdb (Partial PDB)

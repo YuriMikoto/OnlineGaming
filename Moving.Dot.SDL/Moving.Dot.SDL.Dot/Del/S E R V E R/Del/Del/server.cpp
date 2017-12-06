@@ -31,6 +31,7 @@ int main (int argc, char ** argv)
 
 	char tmp[1400];
 	bool running = true;
+	bool gameState = false;
 	
 	SDLNet_SocketSet sockets = SDLNet_AllocSocketSet(30);
 	TCPsocket server = SDLNet_TCP_Open(&ip);
@@ -59,6 +60,17 @@ int main (int argc, char ** argv)
 				sprintf(tmp, "3 \n");
 			}
 			SDLNet_TCP_Send(tmpsocket, tmp, strlen(tmp)+1);
+
+			if (playernum == 3 && gameState == false)
+			{//Only works once the third player has joined. If the game hasn't started yet, start it.
+				gameState = true;
+				//Send message to initiate game.
+				char msg[] = "4 \0";
+				memcpy(tmp, msg, strlen(msg)+1);
+				SDLNet_TCP_Send(socketvector[0].socket, tmp, strlen(tmp) + 1);
+				SDLNet_TCP_Send(socketvector[1].socket, tmp, strlen(tmp) + 1);
+				SDLNet_TCP_Send(socketvector[2].socket, tmp, strlen(tmp) + 1);
+			}
 		}
 		//check for incoming data
 		while (SDLNet_CheckSockets(sockets, 0) > 0) 
@@ -108,20 +120,16 @@ int main (int argc, char ** argv)
 						//One player has detected that a collision has occurred.
 						int tmpvar;
 						sscanf(tmp, "3 %d", &tmpvar);
-						if (tmpvar == 1)
-						{//Player 1 wins; send to Player 2.
-							SDLNet_TCP_Send(socketvector[1].socket, tmp, strlen(tmp) + 1);
-						}
-						else if (tmpvar == 2)
-						{//Player 2 wins; send to Player 1.
-							SDLNet_TCP_Send(socketvector[0].socket, tmp, strlen(tmp) + 1);
-						}
 
-						SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
+						SDLNet_TCP_Send(socketvector[0].socket, tmp, strlen(tmp) + 1);
+						SDLNet_TCP_Send(socketvector[1].socket, tmp, strlen(tmp) + 1);
+						SDLNet_TCP_Send(socketvector[2].socket, tmp, strlen(tmp) + 1);
+						
+						/*SDLNet_TCP_DelSocket(sockets, socketvector[i].socket);
 						SDLNet_TCP_Close(socketvector[i].socket);
 						socketvector.erase(socketvector.begin() + i);
 						playernum = 0;
-						curid = 1;
+						curid = 1;*/
 					}
 				}
 			}

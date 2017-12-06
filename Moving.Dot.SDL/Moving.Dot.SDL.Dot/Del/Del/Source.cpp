@@ -523,6 +523,10 @@ int main(int argc, char* args[])
 			int received = 0;
 
 			int playerID;
+			bool gameState = false; //Determines whether or not the game itself should run.
+			//False at program opening; game cannot begin until enough players have joined.
+			//Becomes true when three players enter the game. At this point, the players can control their dot.
+			//Becomes false again after triggering a win condition. All control freezes, winner is displayed.
 
 			//Main loop flag
 			bool quit = false;
@@ -536,14 +540,22 @@ int main(int argc, char* args[])
 			///   Every time this player dot moves, send a message to the server stating that this dot has moved, which will send this information to the other client.
 			/// Objective 2-2: COMPLETE
 			///   Every update, check for a message that states the other player has moved. On receipt, change that dot's position on this client's side.
-			/// Objective 3-1: --
+			/// Objective 3-1: NOT DONE
 			///   Every move, check to see if the two players have collided. If so, P1 wins. If not, increment a timer; once timer's value reaches a preset max, P2 wins.
 			///   - The collision check is already complete, all that's needed now is to correct the response using data sending to let the other player know. 
 			/// 
 			/// NEXT STEP: Project Version
-			/// Objective 4-1: 
+			/// Objective 4-1: COMPLETE
 			///	  Add a third player. Make this one green.
+			/// Objective 4-2: COMPLETE
+			///   Implement collision response.
+			///   - P1 is pursued by P2 and P3, who work together. If either make contact with P1, P2/3 win. If P2 and P3 collide, nothing happens. If P1 is not caught in a certain time, P1 wins.
+			/// Objective 4-3: --
+			///   Polish. Make the game look a little better.
+			/// Objective 4-4: --
+			///   Ensure the game works on multiple computers.
 			// TEST: Run server indicated before, then CTRL+F5 this solution, once for each player. One client may automatically close; if this happens, close everything and start over.
+			// Working on multiple computers is not tested, but in theory, changing the IP address below to your server computer's IP should allow this one to connect to it. Hopefully?
 			
 			int please = SDLNet_ResolveHost(&ip, "149.153.106.167", 1234);
 			sock = SDLNet_TCP_Open(&ip); 
@@ -559,9 +571,9 @@ int main(int argc, char* args[])
 			Dot player2(2);
 			Dot player3(3);
 
-			//If Player 2 survives for a full minute, they win.
+			//If Player 1 survives for a full minute, they win.
 			int timer = 0;
-			const int ENDGAME_TIME = 6000;
+			const int ENDGAME_TIME = 1800;
 
 			//While application is running
 			while (!quit)
@@ -582,7 +594,7 @@ int main(int argc, char* args[])
 							int otherID;
 							int newX;
 							int newY;
-							sscanf_s(buffer, "%*d %d %d %d", &otherID, &newX, &newY);
+							sscanf_s(buffer, "1 %d %d %d", &otherID, &newX, &newY);
 							std::cout << "(" << newX << ", " << newY << ")" << std::endl;
 							if (otherID == 1)
 							{
@@ -597,17 +609,38 @@ int main(int argc, char* args[])
 								player3.setPosition(newX, newY);
 							}
 
-							std::cout << "P1: (" << player1.getX() << ", " << player1.getY() << ")" << std::endl << 
+							std::cout << "P1: (" << player1.getX() << ", " << player1.getY() << ")" << std::endl <<
 										 "P2: (" << player2.getX() << ", " << player2.getY() << ")" << std::endl <<
-										 "P3: (" << player3.getX() << ", " << player3.getY() << ")" << std::endl;
+										 "P3: (" << player3.getX() << ", " << player3.getY() << ")" << std::endl <<
+										 "Time: " << timer << std::endl;
 
 						}
 
 						if (num == 3)
 						{
 							std::cout << buffer << std::endl;
+							int winner;
+							sscanf_s(buffer, "3 %d", &winner);
 
-							std::cout << "YOU LOSE" << std::endl;
+							if (playerID == 1 && winner == 1)
+							{//You as Player 1 have won.
+								std::cout << "YOU ALONE HAVE WON" << std::endl;
+							}
+							else if ((playerID == 2 || playerID == 3) && winner == 2)
+							{//You as Player 2 or 3 have won.
+								std::cout << "YOUR TEAM HAS WON" << std::endl;
+							}
+							else
+							{//You, regardless of player, have lost.
+								std::cout << "YOU HAVE LOST" << std::endl;
+							}
+							gameState = false;
+						}
+
+						if (num == 4)
+						{//Command to start game has been received.
+							gameState = true;
+							std::cout << "START GAME" << std::endl;
 						}
 					}
 				}
@@ -621,58 +654,63 @@ int main(int argc, char* args[])
 						quit = true;
 					}
 
-					//Handle input for the dot
+					if (gameState)
+					{//Handle input for the dot only if the game is in progress.
+						if (playerID == 1)
+						{
+							player1.handleEvent(e);
+						}
+						else if (playerID == 2)
+						{
+							player2.handleEvent(e);
+						}
+						else if (playerID == 3)
+						{
+							player3.handleEvent(e);
+						}
+					}
+				}
+
+				if (gameState)
+				{//Move the dot and send its new location to the other player only if the game is in progress.
+					player1.move();
+					player2.move();
+					player3.move();
+
+					std::string msg;
+
 					if (playerID == 1)
 					{
-						player1.handleEvent(e);
+						msg = "1 1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY()) + '\0';
 					}
 					else if (playerID == 2)
 					{
-						player2.handleEvent(e);
+						msg = "1 2 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY()) + '\0';
 					}
 					else if (playerID == 3)
 					{
-						player3.handleEvent(e);
+						msg = "1 3 " + std::to_string(player3.getX()) + " " + std::to_string(player3.getY()) + '\0';
 					}
-				}
-
-				//Move the dot and send its new location to the other player.
-				player1.move();
-				player2.move();
-				player3.move();
-
-				std::string msg;
-
-				if (playerID == 1)
-				{
-					msg = "1 1 " + std::to_string(player1.getX()) + " " + std::to_string(player1.getY()) + '\0';
-				}
-				else if (playerID == 2)
-				{
-					msg = "1 2 " + std::to_string(player2.getX()) + " " + std::to_string(player2.getY()) + '\0';
-				}
-				else if (playerID == 3)
-				{
-					msg = "1 3 " + std::to_string(player3.getX()) + " " + std::to_string(player3.getY()) + '\0';
-				}
-				memcpy(buffer, msg.c_str(), msg.size());
-				SDLNet_TCP_Send(sock, buffer, strlen(buffer)+1);
-
-				/*if (player1.handleCollision(player2) || player1.handleCollision(player3) || player2.handleCollision(player3))
-				{
-					msg = "3 1" + '\0';
 					memcpy(buffer, msg.c_str(), msg.size());
 					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
-				}*/
 
-				//Increment game timer and check for game end.
-				timer++;
+					if (player1.handleCollision(player2) || player1.handleCollision(player3))
+					{//Player 1 has been caught by either Player 2 or Player 3. It doesn't matter which; Player 1 loses, and the other two win as a team.
+						msg = "3 2" + '\0';
+						memcpy(buffer, msg.c_str(), msg.size());
+						SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
+					}
 
-				if (timer >= ENDGAME_TIME)
-				{
-					msg = "3 2" + '\0';
-					memcpy(buffer, msg.c_str(), msg.size());
-					SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
+					//Increment game timer and check for game end.
+					timer++;
+
+					if (timer >= ENDGAME_TIME)
+					{//Game time has elapsed, and Player 1 has eluded the others. Player 1 wins, and the other two lose as a team.
+						msg = "3 1" + '\0';
+						memcpy(buffer, msg.c_str(), msg.size());
+						SDLNet_TCP_Send(sock, buffer, strlen(buffer) + 1);
+					}
+
 				}
 
 				//Clear screen
